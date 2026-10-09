@@ -1,0 +1,40 @@
+{
+  "name": "taskflow-board",
+  "version": "0.1.0",
+  "description": "A local four-lane task board that links Codex conversations with safe Git worktree workflows.",
+  "author": {
+    "name": "Xiaodi Kong"
+  },
+  "license": "MIT",
+  "keywords": [
+    "codex",
+    "kanban",
+    "tasks",
+    "git",
+    "worktrees"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Taskflow Board",
+    "shortDescription": "Manage Codex tasks across idea, plan, execute, and verify.",
+    "longDescription": "Taskflow Board is a local-first Kanban workspace for Codex. It keeps task IDs, project paths, linked conversation IDs, verification evidence, and temporary Git worktree branches together in four focused lanes.",
+    "developerName": "Xiaodi Kong",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Local-first",
+      "Git"
+    ],
+    "defaultPrompt": [
+      "打开我的 Taskflow 四泳道任务面板",
+      "把这个想法加入 Taskflow，并关联当前项目",
+      "开始执行一个 Taskflow 任务并准备 Git 工作区"
+    ],
+    "brandColor": "#6D5EF7",
+    "composerIcon": "./assets/taskflow-mark.svg",
+    "logo": "./assets/taskflow-mark.svg",
+    "screenshots": []
+  }
+}

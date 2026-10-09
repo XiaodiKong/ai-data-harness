@@ -1,0 +1,20 @@
+{
+  "name": "ai-data-harness",
+  "interface": {
+    "displayName": "AI Data Harness"
+  },
+  "plugins": [
+    {
+      "name": "taskflow-board",
+      "source": {
+        "source": "local",
+        "path": "./plugins/taskflow-board"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

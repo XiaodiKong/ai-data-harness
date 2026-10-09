@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "taskflow-board": {
+      "command": "node",
+      "args": ["./server/index.mjs"],
+      "cwd": ".",
+      "env_vars": ["TASKFLOW_BOARD_DATA_DIR"]
+    }
+  }
+}

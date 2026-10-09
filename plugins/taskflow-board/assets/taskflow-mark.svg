@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Taskflow Board">
+  <defs>
+    <linearGradient id="g" x1="16" y1="12" x2="112" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#806DFF"/>
+      <stop offset="1" stop-color="#5145CD"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="112" height="112" rx="30" fill="url(#g)"/>
+  <rect x="29" y="31" width="16" height="66" rx="8" fill="#FFF" opacity=".95"/>
+  <rect x="56" y="43" width="16" height="54" rx="8" fill="#FFF" opacity=".82"/>
+  <rect x="83" y="55" width="16" height="42" rx="8" fill="#FFF" opacity=".68"/>
+  <circle cx="37" cy="34" r="9" fill="#F6CB62"/>
+  <circle cx="64" cy="46" r="9" fill="#73D3C2"/>
+  <circle cx="91" cy="58" r="9" fill="#F49A75"/>
+</svg>

@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Taskflow Board</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f5f4f1;
+        --panel: rgba(255, 255, 255, 0.78);
+        --column: rgba(248, 247, 244, 0.86);
+        --card: #fff;
+        --text: #202124;
+        --muted: #6f706f;
+        --line: rgba(40, 40, 42, 0.1);
+        --soft-line: rgba(40, 40, 42, 0.065);
+        --brand: #6d5ef7;
+        --brand-strong: #5547db;
+        --shadow: 0 14px 40px rgba(36, 35, 43, 0.075);
+        --idea: #cc8d24;
+        --idea-soft: #fff3d8;
+        --plan: #6d5ef7;
+        --plan-soft: #eeebff;
+        --execute: #178c7c;
+        --execute-soft: #dff6f1;
+        --verify: #43884f;
+        --verify-soft: #e7f5e8;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #121315;
+          --panel: rgba(28, 29, 32, 0.86);
+          --column: rgba(23, 24, 27, 0.92);
+          --card: #222327;
+          --text: #f2f2f0;
+          --muted: #a4a5a8;
+          --line: rgba(255, 255, 255, 0.12);
+          --soft-line: rgba(255, 255, 255, 0.07);
+          --shadow: 0 16px 42px rgba(0, 0, 0, 0.24);
+          --idea-soft: #3b2e1a;
+          --plan-soft: #2d2948;
+          --execute-soft: #173b36;
+          --verify-soft: #233a27;
+        }
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        background:
+          radial-gradient(circle at 12% 0%, rgba(109, 94, 247, 0.11), transparent 26rem),
+          radial-gradient(circle at 92% 6%, rgba(23, 140, 124, 0.08), transparent 28rem),
+          var(--bg);
+        font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+        font-size: 14px;
+      }
+
+      button, input, textarea, select { font: inherit; }
+      button { color: inherit; }
+      button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+        outline: 3px solid rgba(109, 94, 247, 0.25);
+        outline-offset: 2px;
+      }
+
+      .app { min-height: 100vh; padding: 24px; }
+
+      .shell {
+        max-width: 1540px;
+        min-height: calc(100vh - 48px);
+        margin: 0 auto;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+        overflow: hidden;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 20px 22px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand { display: flex; align-items: center; gap: 12px; min-width: 230px; }
+      .mark {
+        display: grid;
+        grid-template-columns: repeat(3, 5px);
+        align-items: end;
+        gap: 4px;
+        width: 40px;
+        height: 40px;
+        padding: 9px 8px;
+        border-radius: 13px;
+        background: linear-gradient(145deg, #806dff, #5145cd);
+        box-shadow: 0 7px 18px rgba(86, 70, 211, 0.28);
+      }
+      .mark i { display: block; border-radius: 8px; background: white; }
+      .mark i:nth-child(1) { height: 22px; }
+      .mark i:nth-child(2) { height: 17px; opacity: .82; }
+      .mark i:nth-child(3) { height: 12px; opacity: .64; }
+      .brand h1 { margin: 0 0 2px; font-size: 17px; letter-spacing: -0.015em; }
+      .brand p { margin: 0; color: var(--muted); font-size: 12px; }
+
+      .search-wrap { position: relative; flex: 1; max-width: 460px; margin-left: auto; }
+      .search-wrap svg { position: absolute; left: 12px; top: 50%; translate: 0 -50%; color: var(--muted); }
+      .search {
+        width: 100%;
+        height: 40px;
+        padding: 0 14px 0 38px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--text);
+        background: color-mix(in srgb, var(--card) 76%, transparent);
+      }
+
+      .primary, .quiet, .icon-button, .card-action {
+        border: 0;
+        border-radius: 11px;
+        cursor: pointer;
+        transition: transform .16s ease, background .16s ease, border-color .16s ease;
+      }
+      .primary:hover, .quiet:hover, .icon-button:hover, .card-action:hover { transform: translateY(-1px); }
+      .primary {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-height: 40px;
+        padding: 0 15px;
+        color: white;
+        background: var(--brand);
+        font-weight: 650;
+        box-shadow: 0 6px 15px rgba(85, 71, 219, 0.22);
+      }
+      .primary:hover { background: var(--brand-strong); }
+      .quiet, .icon-button {
+        min-height: 38px;
+        padding: 0 12px;
+        border: 1px solid var(--line);
+        background: transparent;
+      }
+      .icon-button { width: 38px; padding: 0; }
+
+      .board-scroll { overflow-x: auto; padding: 20px; }
+      .board {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(268px, 1fr));
+        gap: 14px;
+        min-width: 1160px;
+      }
+
+      .lane {
+        min-height: calc(100vh - 174px);
+        padding: 12px;
+        border: 1px solid var(--soft-line);
+        border-radius: 17px;
+        background: var(--column);
+      }
+      .lane.drag-over { border-color: color-mix(in srgb, var(--lane-color) 62%, transparent); background: var(--lane-soft); }
+      .lane-head { display: flex; align-items: center; gap: 9px; min-height: 40px; padding: 0 4px 10px; }
+      .lane-dot { width: 9px; height: 9px; border-radius: 999px; background: var(--lane-color); box-shadow: 0 0 0 5px var(--lane-soft); }
+      .lane-title { font-size: 14px; font-weight: 720; letter-spacing: .01em; }
+      .lane-en { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+      .count { margin-left: auto; min-width: 25px; padding: 3px 8px; border-radius: 999px; color: var(--muted); background: var(--soft-line); font-size: 11px; text-align: center; }
+      .lane-add { display: grid; place-items: center; width: 28px; height: 28px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; cursor: pointer; }
+      .lane-add:hover { color: var(--text); background: var(--soft-line); }
+
+      .lane-list { display: grid; gap: 10px; align-content: start; min-height: 120px; }
+      .empty { padding: 30px 12px; border: 1px dashed var(--line); border-radius: 13px; color: var(--muted); text-align: center; font-size: 12px; }
+
+      .task-card {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--card);
+        box-shadow: 0 3px 13px rgba(30, 30, 33, .045);
+        cursor: grab;
+        transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+      }
+      .task-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(30, 30, 33, .09); }
+      .task-card:focus-visible { outline: 3px solid color-mix(in srgb, var(--lane-color) 30%, transparent); outline-offset: 2px; }
+      .task-card.dragging { opacity: .45; transform: rotate(1deg) scale(.98); }
+      .task-top { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+      .task-id { color: var(--lane-color); font: 700 10px/1.2 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .045em; }
+      .project-pill { max-width: 130px; margin-left: auto; padding: 3px 7px; border-radius: 7px; color: var(--muted); background: var(--soft-line); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .task-title { margin: 0 0 7px; font-size: 14px; line-height: 1.42; letter-spacing: -0.005em; }
+      .task-content { display: -webkit-box; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+      .meta-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+      .meta-chip { display: inline-flex; align-items: center; gap: 5px; min-height: 23px; padding: 3px 7px; border: 1px solid var(--soft-line); border-radius: 7px; color: var(--muted); font-size: 10px; }
+      .meta-chip.ok { color: var(--verify); background: var(--verify-soft); border-color: transparent; }
+      .meta-chip.warn { color: var(--idea); background: var(--idea-soft); border-color: transparent; }
+      .card-actions { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--soft-line); }
+      .card-action { min-height: 32px; padding: 0 9px; border: 1px solid var(--line); background: transparent; font-size: 11px; }
+      .card-action.emphasis { color: var(--brand); background: color-mix(in srgb, var(--plan-soft) 72%, transparent); border-color: transparent; font-weight: 650; }
+      .card-action:disabled { opacity: .42; cursor: not-allowed; transform: none; }
+
+      .toast {
+        position: fixed;
+        right: 28px;
+        bottom: 28px;
+        z-index: 20;
+        max-width: min(420px, calc(100vw - 40px));
+        padding: 12px 15px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        color: var(--text);
+        background: var(--card);
+        box-shadow: var(--shadow);
+        opacity: 0;
+        translate: 0 10px;
+        pointer-events: none;
+        transition: opacity .2s ease, translate .2s ease;
+      }
+      .toast.show { opacity: 1; translate: 0 0; }
+      .toast.error { color: #c94b42; }
+
+      dialog {
+        width: min(620px, calc(100vw - 32px));
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        color: var(--text);
+        background: var(--card);
+        box-shadow: 0 30px 80px rgba(22, 22, 26, .24);
+      }
+      dialog::backdrop { background: rgba(20, 20, 24, .46); backdrop-filter: blur(4px); }
+      .dialog-head { display: flex; align-items: center; padding: 19px 21px 15px; border-bottom: 1px solid var(--soft-line); }
+      .dialog-head h2 { margin: 0; font-size: 17px; }
+      .dialog-close { margin-left: auto; }
+      .task-form { padding: 19px 21px 21px; }
+      .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+      .field { display: grid; gap: 7px; }
+      .field.wide { grid-column: 1 / -1; }
+      .field label { color: var(--muted); font-size: 11px; font-weight: 650; letter-spacing: .03em; }
+      .field input, .field textarea, .field select {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--text);
+        background: var(--bg);
+      }
+      .field textarea { min-height: 104px; resize: vertical; line-height: 1.5; }
+      .dialog-actions { display: flex; align-items: center; gap: 9px; margin-top: 19px; }
+      .danger { margin-right: auto; color: #c94b42; }
+      .save { margin-left: auto; }
+
+      @media (max-width: 720px) {
+        .app { padding: 0; }
+        .shell { min-height: 100vh; border-radius: 0; border-inline: 0; }
+        .topbar { flex-wrap: wrap; padding: 16px; }
+        .brand { min-width: 0; }
+        .search-wrap { order: 3; flex-basis: 100%; max-width: none; }
+        .board-scroll { padding: 14px; }
+        .form-grid { grid-template-columns: 1fr; }
+        .field.wide { grid-column: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="shell" aria-label="Taskflow Board">
+        <header class="topbar">
+          <div class="brand">
+            <span class="mark" aria-hidden="true"><i></i><i></i><i></i></span>
+            <span><h1>Taskflow Board</h1><p id="summary">四泳道任务系统</p></span>
+          </div>
+          <div class="search-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/></svg>
+            <input id="search" class="search" type="search" placeholder="搜索任务、项目或对话 ID" aria-label="搜索任务" />
+          </div>
+          <button id="refresh" class="icon-button" aria-label="刷新任务">↻</button>
+          <button id="new-task" class="primary"><span aria-hidden="true">＋</span> 新建任务</button>
+        </header>
+        <div class="board-scroll"><div id="board" class="board"></div></div>
+      </section>
+    </main>
+
+    <dialog id="task-dialog">
+      <div class="dialog-head">
+        <h2 id="dialog-title">新建任务</h2>
+        <button class="icon-button dialog-close" type="button" aria-label="关闭">×</button>
+      </div>
+      <form id="task-form" class="task-form" method="dialog">
+        <input id="task-id" type="hidden" />
+        <div class="form-grid">
+          <div class="field wide"><label for="title">任务标题</label><input id="title" maxlength="240" required /></div>
+          <div class="field wide"><label for="content">内容与目标</label><textarea id="content" maxlength="12000"></textarea></div>
+          <div class="field"><label for="status">所在泳道</label><select id="status"><option value="idea">想法</option><option value="plan">方案</option><option value="execute">执行</option><option value="verify">检验</option></select></div>
+          <div class="field"><label for="project-name">项目名称</label><input id="project-name" maxlength="160" /></div>
+          <div class="field wide"><label for="project-path">项目绝对路径</label><input id="project-path" placeholder="/Users/me/project" /></div>
+          <div class="field wide"><label for="conversation-id">Codex / AI 对话 ID</label><input id="conversation-id" maxlength="512" /></div>
+        </div>
+        <div class="dialog-actions">
+          <button id="archive" class="quiet danger" type="button" hidden>归档任务</button>
+          <button class="quiet dialog-close" type="button">取消</button>
+          <button class="primary save" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      const LANES = [
+        { id: "idea", label: "想法", en: "Idea", color: "var(--idea)", soft: "var(--idea-soft)" },
+        { id: "plan", label: "方案", en: "Plan", color: "var(--plan)", soft: "var(--plan-soft)" },
+        { id: "execute", label: "执行", en: "Execute", color: "var(--execute)", soft: "var(--execute-soft)" },
+        { id: "verify", label: "检验", en: "Verify", color: "var(--verify)", soft: "var(--verify-soft)" },
+      ];
+
+      const SAMPLE_TASKS = [
+        { id: "TF-20260826-001", title: "统一任务与 AI 对话的关联方式", content: "明确卡片、对话、项目之间的稳定标识和打开路径。", status: "idea", rank: 1000, project: { name: "Taskflow", path: "/Users/me/taskflow" }, conversation: { threadId: "" }, git: { state: "none", branchName: "" }, verification: { outcome: "pending" }, updatedAt: new Date().toISOString() },
+        { id: "TF-20260826-002", title: "设计 Git 分支安全生命周期", content: "使用独立 worktree，完成检验后 fast-forward 合并并清理临时分支。", status: "plan", rank: 1000, project: { name: "Taskflow", path: "/Users/me/taskflow" }, conversation: { threadId: "thread_demo_002" }, git: { state: "none", branchName: "" }, verification: { outcome: "pending" }, updatedAt: new Date().toISOString() },
+        { id: "TF-20260826-003", title: "实现四泳道交互面板", content: "支持新增、编辑、搜索、拖拽、关联对话与 Git 操作入口。", status: "execute", rank: 1000, project: { name: "taskflow-board", path: "/Users/me/plugins/taskflow-board" }, conversation: { threadId: "thread_demo_003" }, git: { state: "prepared", branchName: "codex/taskflow-tf-003" }, verification: { outcome: "pending" }, updatedAt: new Date().toISOString() },
+        { id: "TF-20260826-004", title: "验证任务持久化与分支清理", content: "覆盖 MCP CRUD、Git worktree 创建、合并与删除的端到端测试。", status: "verify", rank: 1000, project: { name: "taskflow-board", path: "/Users/me/plugins/taskflow-board" }, conversation: { threadId: "thread_demo_004" }, git: { state: "merged", branchName: "codex/taskflow-tf-004" }, verification: { outcome: "passed", summary: "All checks passed" }, updatedAt: new Date().toISOString() },
+      ];
+
+      const state = {
+        board: { tasks: window.parent === window ? SAMPLE_TASKS : [], counts: {} },
+        query: "",
+        draggedTaskId: "",
+        pending: new Map(),
+        requestId: 1,
+        preview: window.parent === window,
+      };
+
+      const $ = (selector) => document.querySelector(selector);
+      const boardEl = $("#board");
+      const dialog = $("#task-dialog");
+      const form = $("#task-form");
+
+      function el(tag, className, text) {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text !== undefined) node.textContent = text;
+        return node;
+      }
+
+      function toast(message, isError = false) {
+        const node = $("#toast");
+        node.textContent = message;
+        node.className = `toast show${isError ? " error" : ""}`;
+        clearTimeout(toast.timer);
+        toast.timer = setTimeout(() => { node.className = "toast"; }, 2600);
+      }
+
+      function unwrapBoard(result) {
+        return result?.structuredContent?.board || result?.board || result?.structuredContent?.board?.board || null;
+      }
+
+      function hostRequest(method, params) {
+        const id = state.requestId++;
+        window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
+        return new Promise((resolve, reject) => state.pending.set(id, { resolve, reject }));
+      }
+
+      async function callTool(name, args) {
+        if (state.preview) return previewTool(name, args);
+        const result = window.openai?.callTool
+          ? await window.openai.callTool(name, args)
+          : await hostRequest("tools/call", { name, arguments: args });
+        const nextBoard = unwrapBoard(result);
+        if (nextBoard) { state.board = nextBoard; render(); }
+        return result;
+      }
+
+      async function followUp(message) {
+        if (state.preview) { toast(`预览消息：${message}`); return; }
+        if (window.openai?.sendFollowUpMessage) {
+          await window.openai.sendFollowUpMessage({ prompt: message });
+        } else {
+          await hostRequest("ui/message", { role: "user", content: [{ type: "text", text: message }] });
+        }
+      }
+
+      async function previewTool(name, args) {
+        let task;
+        if (name === "taskflow_list_tasks") return { structuredContent: { board: state.board } };
+        if (name === "taskflow_create_task") {
+          task = {
+            id: `TF-PREVIEW-${String(state.board.tasks.length + 1).padStart(3, "0")}`,
+            title: args.title,
+            content: args.content || args.title,
+            status: args.status || "idea",
+            rank: Date.now(),
+            project: { name: args.projectName || "", path: args.projectPath || "" },
+            conversation: { threadId: args.conversationId || "" },
+            git: { state: "none", branchName: "" },
+            verification: { outcome: "pending" },
+            updatedAt: new Date().toISOString(),
+          };
+          state.board.tasks.push(task);
+        } else if (name === "taskflow_update_task") {
+          task = state.board.tasks.find((item) => item.id === args.taskId);
+          if (!task) throw new Error("Task not found");
+          if (args.title !== undefined) task.title = args.title;
+          if (args.content !== undefined) task.content = args.content;
+          if (args.status !== undefined) task.status = args.status;
+          if (args.projectName !== undefined) task.project.name = args.projectName;
+          if (args.projectPath !== undefined) task.project.path = args.projectPath;
+          if (args.conversationId !== undefined) task.conversation.threadId = args.conversationId;
+          task.updatedAt = new Date().toISOString();
+        } else if (name === "taskflow_archive_task") {
+          state.board.tasks = state.board.tasks.filter((item) => item.id !== args.taskId);
+        }
+        render();
+        return { structuredContent: { task, board: state.board } };
+      }
+
+      function matchesQuery(task) {
+        const query = state.query.trim().toLowerCase();
+        if (!query) return true;
+        const haystack = [task.id, task.title, task.content, task.project?.name, task.project?.path, task.conversation?.threadId].filter(Boolean).join(" ").toLowerCase();
+        return haystack.includes(query);
+      }
+
+      function iconText(symbol, text) {
+        const chip = el("span", "meta-chip");
+        chip.append(el("span", "", symbol), document.createTextNode(text));
+        return chip;
+      }
+
+      async function moveTask(task, nextStatus) {
+        if (!task || task.status === nextStatus) return;
+        const lane = LANES.find((item) => item.id === nextStatus);
+        const previous = task.status;
+        task.status = nextStatus;
+        render();
+        try {
+          await callTool("taskflow_update_task", { taskId: task.id, status: nextStatus });
+          toast(`${task.id} 已移动到${lane?.label || nextStatus}`);
+        } catch (error) {
+          task.status = previous;
+          render();
+          toast(error.message || "移动失败", true);
+        }
+      }
+
+      function renderCard(task, lane) {
+        const card = el("article", "task-card");
+        card.draggable = true;
+        card.tabIndex = 0;
+        card.ariaLabel = `${task.id} ${task.title}。按 Option 加左右方向键切换泳道。`;
+        card.dataset.taskId = task.id;
+        card.style.setProperty("--lane-color", lane.color);
+        card.addEventListener("dragstart", () => { state.draggedTaskId = task.id; card.classList.add("dragging"); });
+        card.addEventListener("dragend", () => { state.draggedTaskId = ""; card.classList.remove("dragging"); document.querySelectorAll(".lane").forEach((item) => item.classList.remove("drag-over")); });
+        card.addEventListener("keydown", async (event) => {
+          if (!event.altKey || !["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+          event.preventDefault();
+          const index = LANES.findIndex((item) => item.id === task.status);
+          const nextIndex = Math.max(0, Math.min(LANES.length - 1, index + (event.key === "ArrowRight" ? 1 : -1)));
+          if (nextIndex !== index) await moveTask(task, LANES[nextIndex].id);
+        });
+        card.addEventListener("dblclick", () => openDialog(task));
+
+        const top = el("div", "task-top");
+        top.append(el("span", "task-id", task.id));
+        if (task.project?.name) {
+          const project = el("span", "project-pill", task.project.name);
+          project.title = task.project.path || task.project.name;
+          top.append(project);
+        }
+        card.append(top, el("h3", "task-title", task.title), el("p", "task-content", task.content || "暂无描述"));
+
+        const meta = el("div", "meta-row");
+        if (task.conversation?.threadId) meta.append(iconText("✦", "已关联对话"));
+        if (task.git?.state === "prepared") meta.append(iconText("⑂", task.git.branchName || "Git 工作区"));
+        if (task.git?.state === "merged") {
+          const merged = iconText("✓", "已合并"); merged.classList.add("ok"); meta.append(merged);
+        }
+        if (task.verification?.outcome === "passed") {
+          const checked = iconText("✓", "检验通过"); checked.classList.add("ok"); meta.append(checked);
+        }
+        if (task.verification?.outcome === "failed") {
+          const failed = iconText("!", "检验失败"); failed.classList.add("warn"); meta.append(failed);
+        }
+        if (meta.childNodes.length) card.append(meta);
+
+        const actions = el("div", "card-actions");
+        const mainAction = el("button", "card-action emphasis", task.conversation?.threadId ? "进入 AI 对话" : "开始 AI 对话");
+        mainAction.type = "button";
+        mainAction.addEventListener("click", async (event) => {
+          event.stopPropagation();
+          await followUp(task.conversation?.threadId
+            ? `Taskflow action: open conversation for ${task.id}. Fetch the task first, then navigate to its linked Codex conversation.`
+            : `Taskflow action: start a Codex conversation for ${task.id}. Fetch the task first and ask before creating a new user-owned task.`);
+        });
+        const more = el("button", "card-action", "编辑");
+        more.type = "button";
+        more.addEventListener("click", (event) => { event.stopPropagation(); openDialog(task); });
+        actions.append(mainAction, more);
+
+        if (task.project?.path && task.git?.state === "none" && task.status !== "verify") {
+          const gitButton = el("button", "card-action", "创建 Git 分支");
+          gitButton.type = "button";
+          gitButton.style.gridColumn = "1 / -1";
+          gitButton.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            await followUp(`Taskflow action: prepare Git for ${task.id}. Fetch the task, confirm the intended base branch with me if needed, then use the safe Taskflow Git workflow.`);
+          });
+          actions.append(gitButton);
+        }
+        if (task.git?.state === "prepared") {
+          const verifyButton = el("button", "card-action", "检验并完成");
+          verifyButton.type = "button";
+          verifyButton.style.gridColumn = "1 / -1";
+          verifyButton.addEventListener("click", async (event) => {
+            event.stopPropagation();
+            await followUp(`Taskflow action: verify and finish ${task.id}. Run relevant checks in its recorded worktree, save the evidence, and ask me explicitly before merging and deleting the temporary branch.`);
+          });
+          actions.append(verifyButton);
+        }
+        card.append(actions);
+        return card;
+      }
+
+      function render() {
+        boardEl.replaceChildren();
+        const visible = (state.board.tasks || []).filter(matchesQuery);
+        $("#summary").textContent = `${visible.length} 个任务 · 本地持久化`;
+
+        for (const lane of LANES) {
+          const section = el("section", "lane");
+          section.dataset.status = lane.id;
+          section.style.setProperty("--lane-color", lane.color);
+          section.style.setProperty("--lane-soft", lane.soft);
+          section.addEventListener("dragover", (event) => { event.preventDefault(); section.classList.add("drag-over"); });
+          section.addEventListener("dragleave", (event) => { if (!section.contains(event.relatedTarget)) section.classList.remove("drag-over"); });
+          section.addEventListener("drop", async (event) => {
+            event.preventDefault();
+            section.classList.remove("drag-over");
+            const task = state.board.tasks.find((item) => item.id === state.draggedTaskId);
+            await moveTask(task, lane.id);
+          });
+
+          const head = el("header", "lane-head");
+          head.append(el("span", "lane-dot"), el("span", "lane-title", lane.label), el("span", "lane-en", lane.en));
+          const laneTasks = visible.filter((task) => task.status === lane.id);
+          head.append(el("span", "count", String(laneTasks.length)));
+          const add = el("button", "lane-add", "+");
+          add.type = "button";
+          add.ariaLabel = `在${lane.label}中添加任务`;
+          add.addEventListener("click", () => openDialog(null, lane.id));
+          head.append(add);
+          section.append(head);
+
+          const list = el("div", "lane-list");
+          if (!laneTasks.length) list.append(el("div", "empty", state.query ? "没有匹配任务" : "拖入任务或点击 ＋"));
+          else laneTasks.sort((a, b) => (a.rank || 0) - (b.rank || 0)).forEach((task) => list.append(renderCard(task, lane)));
+          section.append(list);
+          boardEl.append(section);
+        }
+      }
+
+      function openDialog(task = null, status = "idea") {
+        $("#dialog-title").textContent = task ? `编辑 ${task.id}` : "新建任务";
+        $("#task-id").value = task?.id || "";
+        $("#title").value = task?.title || "";
+        $("#content").value = task?.content || "";
+        $("#status").value = task?.status || status;
+        $("#project-name").value = task?.project?.name || "";
+        $("#project-path").value = task?.project?.path || "";
+        $("#conversation-id").value = task?.conversation?.threadId || "";
+        $("#archive").hidden = !task;
+        dialog.showModal();
+        setTimeout(() => $("#title").focus(), 0);
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const taskId = $("#task-id").value;
+        const args = {
+          title: $("#title").value.trim(),
+          content: $("#content").value.trim(),
+          status: $("#status").value,
+          projectName: $("#project-name").value.trim(),
+          projectPath: $("#project-path").value.trim(),
+          conversationId: $("#conversation-id").value.trim(),
+        };
+        if (!args.title) return;
+        try {
+          await callTool(taskId ? "taskflow_update_task" : "taskflow_create_task", taskId ? { taskId, ...args } : args);
+          dialog.close();
+          toast(taskId ? `${taskId} 已更新` : "任务已创建");
+        } catch (error) { toast(error.message || "保存失败", true); }
+      });
+
+      $("#archive").addEventListener("click", async () => {
+        const taskId = $("#task-id").value;
+        if (!taskId) return;
+        try {
+          await callTool("taskflow_archive_task", { taskId, archived: true });
+          dialog.close(); toast(`${taskId} 已归档`);
+        } catch (error) { toast(error.message || "归档失败", true); }
+      });
+
+      document.querySelectorAll(".dialog-close").forEach((button) => button.addEventListener("click", () => dialog.close()));
+      $("#new-task").addEventListener("click", () => openDialog());
+      $("#search").addEventListener("input", (event) => { state.query = event.target.value; render(); });
+      $("#refresh").addEventListener("click", async () => {
+        try { await callTool("taskflow_list_tasks", {}); toast("任务已刷新"); }
+        catch (error) { toast(error.message || "刷新失败", true); }
+      });
+
+      window.addEventListener("message", (event) => {
+        if (event.source !== window.parent) return;
+        const message = event.data;
+        if (!message || message.jsonrpc !== "2.0") return;
+        if (message.id !== undefined && state.pending.has(message.id)) {
+          const pending = state.pending.get(message.id);
+          state.pending.delete(message.id);
+          if (message.error) pending.reject(new Error(message.error.message || "Host request failed"));
+          else pending.resolve(message.result);
+          return;
+        }
+        if (message.method === "ui/notifications/tool-result") {
+          const nextBoard = unwrapBoard(message.params);
+          if (nextBoard) { state.board = nextBoard; render(); }
+        }
+      }, { passive: true });
+
+      const initialBoard = unwrapBoard({ structuredContent: window.openai?.toolOutput });
+      if (initialBoard) state.board = initialBoard;
+      render();
+    </script>
+  </body>
+</html>
