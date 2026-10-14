@@ -34,10 +34,8 @@ npm run preview
 
 [Skill 源文件](skills/document-finalization/SKILL.md) 用于多轮文档整合、论据检查、决策记录分离和版本验收。
 
-### 在其他 AI 中测试
+### document-finalization 的跨 AI 测试
 
-统一入口是 [AI-START.md](AI-START.md)。让新 AI 读取并执行该文件即可，启动指令、测试步骤和回传要求均已写入项目，不必复制长提示词。
+该 Skill 的 [测试与复核入口](tests/skills/document-finalization-pilot/AI-START.md) 包含启动指令、测试步骤和文件回传方式。测试批次、协作任务、运行结果和辅助工具集中在 `tests/skills/document-finalization-pilot/` 中，适用范围仅为此 Skill。
 
-AI 按 [任务单](ai-collaboration/tasks/document-finalization-evaluation/TASK.md) 执行，将结果写成 `ai-collaboration/runs/<run-id>/` 下的四个交接文件；下一位 AI 直接读取结果并另写复核意见。没有 GitHub 写权限时，返回 ZIP 或可下载文件，用户只需传递附件。
-
-[测试入口](tests/skills/document-finalization-pilot/RUN-TESTS.md) 仍保持有效，当前固定批次为 v0.3.0，旧批次保留回测。文件管理工具不执行模型测试；读取 GitHub 不代表能自动回写，具体能力与执行限制必须记录。完整流程见 [文件协作约定](ai-collaboration/README.md)。
+其他 AI 读取该入口后执行任务并交付结果目录；接收方读取原始文件复核。没有 GitHub 写权限时返回 ZIP 或可下载文件。文件交接机制不代替真实模型测试，也不授予仓库写权限。

@@ -6,7 +6,7 @@
 
 请实际测试本仓库的文档定稿 Skill，保留完整证据，并把结果写成项目文件，供下一位 AI 复核。无需用户逐轮复制输入。
 
-先读取 [固定批次入口](../../../tests/skills/document-finalization-pilot/RUN-TESTS.md) 和它指定的 `active-batch.json`、批次执行说明及冻结材料。以本次读取的批次为准，记录其哈希，运行中不切换版本。
+先读取 [固定批次入口](../../../RUN-TESTS.md) 和它指定的 `active-batch.json`、批次执行说明及冻结材料。以本次读取的批次为准，记录其哈希，运行中不切换版本。
 
 只有测试调度者可以预读场景脚本，被测上下文每次只收到 Skill 和当前轮输入。按执行说明完成多轮修改、证据与验收、交接、缺失材料及边界场景。能创建独立上下文时禁用父历史继承；不能时明确标为演练。先生成原始结果，再读取评分规则。
 
@@ -14,12 +14,12 @@
 
 ## 执行步骤
 
-1. 读取材料和 [文件协作约定](../../README.md)。支持本地命令时运行 `python3 scripts/ai_exchange.py init --ai "产品名" --model "可见型号或unknown"`；否则建立唯一运行目录并按下述字段创建文件。不要覆盖别人或上次运行的结果。
+1. 读取材料和 [文件协作约定](../../README.md)。支持本地命令时运行 `python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py init --ai "产品名" --model "可见型号或unknown"`；否则建立唯一运行目录并按下述字段创建文件。不要覆盖别人或上次运行的结果。
 2. 在 `run.json` 记录实际环境及执行方式，将状态改为 `running`。未知信息写 `unknown`，不要猜测产品型号或源提交。
 3. 按冻结批次说明逐轮执行，把实际输入与完整输出追加到 `transcript.md`，明确场景和轮次。不得用“应该输出什么”或摘要替代原始回复；不得提前读取评分规则后伪装盲测。
-4. 原始回复保存后，先执行 `python3 scripts/ai_exchange.py checkpoint --run <运行目录>`，记录评分前的 transcript 哈希，再读取评分规则并完成 `report.md`。此后不修改原始 transcript；补跑另建运行。手工环境记录相同摘要与时间，无法计算则填写 `unknown` 并说明隔离无法核验。引用对应场景及轮次，区分通过、部分通过、失败、未执行和无法判断，问题要有原文证据。
-5. 填完 `NEXT.md`，在 `run.json` 中记录完成范围及限制。有命令能力时保持 `running`，执行 `python3 scripts/ai_exchange.py finalize --run <运行目录> --status completed`，由工具在所有文件就绪后记录哈希与最终状态；中断则使用 `partial` 或 `blocked`。不能运行工具时手动填写最终状态和哈希，无法计算的哈希写 `unknown`。不重新编写成完整成功，不要求用户给虚构方案逐轮验收。
-6. 有命令能力时执行 `python3 scripts/ai_exchange.py validate --run <运行目录>` 和 `python3 scripts/ai_exchange.py pack --run <运行目录>`。向用户提供运行目录、下载附件或已授权写入的提交/PR 链接即可，不再要求复制报告正文。
+4. 原始回复保存后，先执行 `python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py checkpoint --run <运行目录>`，记录评分前的 transcript 哈希，再读取评分规则并完成 `report.md`。此后不修改原始 transcript；补跑另建运行。手工环境记录相同摘要与时间，无法计算则填写 `unknown` 并说明隔离无法核验。引用对应场景及轮次，区分通过、部分通过、失败、未执行和无法判断，问题要有原文证据。
+5. 填完 `NEXT.md`，在 `run.json` 中记录完成范围及限制。有命令能力时保持 `running`，执行 `python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py finalize --run <运行目录> --status completed`，由工具在所有文件就绪后记录哈希与最终状态；中断则使用 `partial` 或 `blocked`。不能运行工具时手动填写最终状态和哈希，无法计算的哈希写 `unknown`。不重新编写成完整成功，不要求用户给虚构方案逐轮验收。
+6. 有命令能力时执行 `python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py validate --run <运行目录>` 和 `python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py pack --run <运行目录>`。向用户提供运行目录、下载附件或已授权写入的提交/PR 链接即可，不再要求复制报告正文。
 
 ## 四个文件必须包含什么
 

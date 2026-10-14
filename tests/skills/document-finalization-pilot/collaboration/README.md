@@ -1,6 +1,6 @@
-# 通过项目文件协作
+# document-finalization 测试的文件协作
 
-本目录保存 AI 之间的任务交接与结果，项目文件是共同依据，不依赖聊天转述。它不自动连接 AI 账号、授予权限或调度远程执行。
+本目录只保存 document-finalization 测试的任务交接与结果，不作为整个项目的通用协作规范。文件是共同依据，不依赖聊天转述。它不自动连接 AI 账号、授予权限或调度远程执行。
 
 ## 交接流程
 
@@ -15,11 +15,11 @@
 在项目根目录执行以下命令。它们只管理文件，不运行模型，也不会把检查通过当作行为测试通过。
 
 ```sh
-python3 scripts/ai_exchange.py init --ai "使用的产品名" --model "可见型号或unknown"
-python3 scripts/ai_exchange.py checkpoint --run ai-collaboration/runs/<run-id>
-python3 scripts/ai_exchange.py finalize --run ai-collaboration/runs/<run-id> --status completed
-python3 scripts/ai_exchange.py validate --run ai-collaboration/runs/<run-id>
-python3 scripts/ai_exchange.py pack --run ai-collaboration/runs/<run-id>
+python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py init --ai "使用的产品名" --model "可见型号或unknown"
+python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py checkpoint --run tests/skills/document-finalization-pilot/collaboration/runs/<run-id>
+python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py finalize --run tests/skills/document-finalization-pilot/collaboration/runs/<run-id> --status completed
+python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py validate --run tests/skills/document-finalization-pilot/collaboration/runs/<run-id>
+python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py pack --run tests/skills/document-finalization-pilot/collaboration/runs/<run-id>
 ```
 
 `init` 输出唯一目录，预填当前任务、批次及哈希，并自动保存 `task-snapshot.md`，初始状态为 `prepared`。AI 补充执行方式、逐轮记录，删去相应模板中的 `awaiting-output` 标记。读取评分规则前先用 `checkpoint` 留存 transcript 摘要，随后评审并填写报告和交接说明。`finalize` 在文件就绪后记录文件哈希及最终状态；中断或未开始时按实际情况使用 `partial` 或 `blocked`，不要一律选择 `completed`。交付后原始文件不再覆盖，复核者仅新增 `review.md`。`validate` 仅检查约定字段、文本文件、版本与哈希；不判断内容真假、质量或实际执行。`pack` 在运行目录旁生成 ZIP，供没有 Git 写权限的环境下载回传。
@@ -29,6 +29,14 @@ python3 scripts/ai_exchange.py pack --run ai-collaboration/runs/<run-id>
 不能运行脚本时，按任务单的字段和结构生成同样的文件，无法确定的环境信息写 `unknown`。文件无法提供时说明限制，不让用户复制长篇原始对话来冒充文件交付。
 
 入口、任务单、历史报告、交接状态及评分文件只供调度者和复核者读取，不整体转发给被测上下文。被测上下文仍只接收冻结 Skill、当前轮输入，以及该交接场景明确要求的原样材料。文件化协作不放宽测试隔离要求。
+
+## 验证文件工具
+
+从项目根目录直接运行下面的测试命令；该目录未注册为 Python 包，不依赖根 tests 目录的自动发现。这些测试只检查文件交接工具，不调用 AI。
+
+```sh
+python3 tests/skills/document-finalization-pilot/test_ai_exchange.py
+```
 
 ## 结果如何回到仓库
 

@@ -8,7 +8,7 @@ import tempfile
 import unittest
 import zipfile
 
-PROJECT = Path(__file__).resolve().parents[1]
+PROJECT = Path(__file__).resolve().parents[3]
 
 
 class ExchangeTests(unittest.TestCase):
@@ -17,8 +17,8 @@ class ExchangeTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         for relative in [
-            "scripts/ai_exchange.py",
-            "ai-collaboration/tasks/document-finalization-evaluation/TASK.md",
+            "tests/skills/document-finalization-pilot/scripts/ai_exchange.py",
+            "tests/skills/document-finalization-pilot/collaboration/tasks/evaluation/TASK.md",
             "tests/skills/document-finalization-pilot/active-batch.json",
         ]:
             target = self.root / relative
@@ -29,7 +29,7 @@ class ExchangeTests(unittest.TestCase):
 
     def cli(self, *args, ok=True):
         result = subprocess.run(
-            [sys.executable, str(self.root / "scripts/ai_exchange.py"), *args],
+            [sys.executable, str(self.root / "tests/skills/document-finalization-pilot/scripts/ai_exchange.py"), *args],
             cwd=self.root, capture_output=True, text=True,
         )
         if ok:
@@ -62,7 +62,7 @@ class ExchangeTests(unittest.TestCase):
         self.assertEqual(json.loads((first / "run.json").read_text())["status"], "prepared")
         self.assertEqual(
             (first / "task-snapshot.md").read_bytes(),
-            (self.root / "ai-collaboration/tasks/document-finalization-evaluation/TASK.md").read_bytes(),
+            (self.root / "tests/skills/document-finalization-pilot/collaboration/tasks/evaluation/TASK.md").read_bytes(),
         )
         self.cli("validate", "--run", str(first))
 
@@ -90,7 +90,7 @@ class ExchangeTests(unittest.TestCase):
     def test_old_task_remains_reproducible(self):
         run = self.init()
         self.complete(run)
-        (self.root / "ai-collaboration/tasks/document-finalization-evaluation/TASK.md").write_text("new task")
+        (self.root / "tests/skills/document-finalization-pilot/collaboration/tasks/evaluation/TASK.md").write_text("new task")
         self.cli("validate", "--run", str(run))
         self.cli("pack", "--run", str(run))
 
@@ -118,7 +118,7 @@ class ExchangeTests(unittest.TestCase):
     def test_symlink_and_outside_run_rejected(self):
         run = self.init()
         (run / "report.md").unlink()
-        (run / "report.md").symlink_to(self.root / "scripts/ai_exchange.py")
+        (run / "report.md").symlink_to(self.root / "tests/skills/document-finalization-pilot/scripts/ai_exchange.py")
         self.cli("validate", "--run", str(run), ok=False)
         self.cli("validate", "--run", str(self.root), ok=False)
 

@@ -11,10 +11,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 import subprocess
 
-ROOT = Path(__file__).resolve().parent.parent
-RUNS = ROOT / "ai-collaboration/runs"
-TASK = ROOT / "ai-collaboration/tasks/document-finalization-evaluation/TASK.md"
-PILOT = ROOT / "tests/skills/document-finalization-pilot"
+PILOT = Path(__file__).resolve().parents[1]
+ROOT = PILOT.parents[2]
+RUNS = PILOT / "collaboration/runs"
+TASK = PILOT / "collaboration/tasks/evaluation/TASK.md"
 FILES = {"report": "report.md", "transcript": "transcript.md", "next": "NEXT.md"}
 TERMINAL = {"completed", "partial", "blocked"}
 MODES = {"isolated_contexts", "single_context_rehearsal", "mixed", "unknown"}
@@ -104,7 +104,7 @@ def resolve_run(value):
     path = Path(value)
     run = (path if path.is_absolute() else ROOT / path).resolve()
     if run.parent != RUNS.resolve() or not run.is_dir():
-        raise ValueError("Run must be an existing direct child of ai-collaboration/runs")
+        raise ValueError("Run must be an existing direct child of this Skill test area: collaboration/runs")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run.name):
         raise ValueError("Run directory name contains unsupported characters")
     for name in ["run.json", "task-snapshot.md", *FILES.values()]:

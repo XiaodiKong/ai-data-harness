@@ -19,6 +19,6 @@
 
 当前版本为 v0.3.0；跨 AI 运行请从 [测试入口](../tests/skills/document-finalization-pilot/RUN-TESTS.md) 开始，入口会选择相应冻结批次。
 
-启动指令和结果回传也已文件化：其他 AI 从 [AI-START.md](../AI-START.md) 获取任务，将结果保存为独立运行目录，接收方再读取文件复核，无需复制长提示词或原始对话。此协作约定位于项目层，不改变已冻结的 Skill 或测试批次。
+启动指令和结果回传也已文件化：其他 AI 从 [document-finalization 测试入口](../tests/skills/document-finalization-pilot/AI-START.md) 获取任务，将结果保存为独立运行目录，接收方再读取文件复核，无需复制长提示词或原始对话。此协作约定仅用于该 Skill 的测试，不作为全项目默认规范，也不改变已冻结的 Skill 或测试批次。
 
 行为评估规范见 [文档定稿评估案例](../tests/skills/document-finalization-cases.md)。格式校验通过不代表跨 AI 行为已验证。
