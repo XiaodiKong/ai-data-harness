@@ -15,7 +15,10 @@ PILOT = Path(__file__).resolve().parents[1]
 ROOT = PILOT.parents[2]
 RUNS = PILOT / "collaboration/runs"
 TASK = PILOT / "collaboration/tasks/evaluation/TASK.md"
-FILES = {"report": "report.md", "transcript": "transcript.md", "next": "NEXT.md"}
+LEGACY_FILES = {"report": "report.md", "transcript": "transcript.md", "next": "NEXT.md"}
+FILES = {**LEGACY_FILES, "evidence": "evidence.json"}
+CAPTURE_MODES = {"native_events", "formatted_transcript", "unknown"}
+TOOL_ACCESS = {"disabled", "restricted", "unrestricted", "unknown"}
 TERMINAL = {"completed", "partial", "blocked"}
 MODES = {"isolated_contexts", "single_context_rehearsal", "mixed", "unknown"}
 PENDING = "<!-- awaiting-output -->"
@@ -31,6 +34,66 @@ def read_json(path):
 
 def write_json(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def contract_files(meta):
+    versions = (meta.get("schema_version"), meta.get("task_version"))
+    if versions == (1, 1):
+        return LEGACY_FILES
+    if versions == (2, 2):
+        return FILES
+    raise ValueError("Unsupported schema/task version")
+
+
+def regular_file(run, name):
+    path = run / name
+    if path.is_symlink() or not path.is_file():
+        raise ValueError(f"Missing regular file: {name}")
+    return path
+
+
+def reject_non_json_number(value):
+    raise ValueError(f"Non-JSON number: {value}")
+
+
+def evidence_files(run, meta, warn=True):
+    """Validate the evidence declaration, not its claimed authenticity."""
+    if meta["schema_version"] == 1:
+        return []
+    evidence = read_json(regular_file(run, "evidence.json"))
+    required = {"schema_version", "capture_mode", "raw_events_file", "tool_access", "limitations"}
+    if not isinstance(evidence, dict) or required - evidence.keys():
+        raise ValueError("Incomplete evidence declaration")
+    if evidence["schema_version"] != 1 or evidence["capture_mode"] not in CAPTURE_MODES:
+        raise ValueError("Unsupported evidence schema or capture mode")
+    if evidence["tool_access"] not in TOOL_ACCESS:
+        raise ValueError("Unsupported tool access declaration")
+    if not isinstance(evidence["limitations"], list) or not all(
+        isinstance(item, str) for item in evidence["limitations"]
+    ):
+        raise ValueError("Evidence limitations must be a list of strings")
+    names = ["evidence.json"]
+    if evidence["capture_mode"] == "native_events":
+        if evidence["raw_events_file"] != "raw-events.jsonl":
+            raise ValueError("native_events requires raw_events_file: raw-events.jsonl")
+        raw = regular_file(run, "raw-events.jsonl").read_text(encoding="utf-8")
+        if not raw.strip():
+            raise ValueError("Native raw events must not be empty")
+        for number, line in enumerate(raw.splitlines(), 1):
+            try:
+                event = json.loads(line, parse_constant=reject_non_json_number)
+            except ValueError as error:
+                raise ValueError(f"Invalid raw-events.jsonl JSON on line {number}") from error
+            if not isinstance(event, dict):
+                raise ValueError(f"raw-events.jsonl line {number} must be an object")
+        names.append("raw-events.jsonl")
+    elif evidence["raw_events_file"] is not None:
+        raise ValueError("Only native_events may declare a raw_events_file")
+    elif warn:
+        print("WARNING: no native event export; original message bytes and tool events are unverified")
+    if warn and evidence["tool_access"] == "unknown":
+        print("WARNING: executor tool access was not captured")
+    return names
 
 
 def inside(base, relative):
@@ -75,19 +138,24 @@ def init_run(args):
     except (subprocess.CalledProcessError, FileNotFoundError):
         commit, dirty = "unknown", "unknown"
     metadata = {
-        "schema_version": 1, "run_id": run_id,
-        "task_id": "document-finalization-evaluation", "task_version": 1,
+        "schema_version": 2, "run_id": run_id,
+        "task_id": "document-finalization-evaluation", "task_version": 2,
         "created_at": now.isoformat(), "ai_product": args.ai, "model": args.model,
         "source_commit": commit, "source_tracked_changes": dirty,
         "batch_id": active["batch_id"], "batch_path": str(batch.relative_to(ROOT)),
         "batch_manifest_sha256": digest(manifest_path),
         "task_sha256": hashlib.sha256(task_bytes).hexdigest(), "task_snapshot": "task-snapshot.md",
         "transcript_before_review_sha256": "unknown",
+        "evidence_before_review_sha256": {},
         "execution_mode": "unknown", "context_isolation": "unknown",
         "review_mode": "unknown", "status": "prepared", "completed_scope": [],
         "limitations": [], "files": FILES, "artifact_sha256": {},
     }
     write_json(run / "run.json", metadata)
+    write_json(run / "evidence.json", {
+        "schema_version": 1, "capture_mode": "unknown", "raw_events_file": None,
+        "tool_access": "unknown", "limitations": [],
+    })
     (run / "task-snapshot.md").write_bytes(task_bytes)
     templates = {
         "report.md": "# Test report\n\nEnvironment, scope, criterion results, evidence locations, findings and limitations.\n",
@@ -107,10 +175,10 @@ def resolve_run(value):
         raise ValueError("Run must be an existing direct child of this Skill test area: collaboration/runs")
     if not re.fullmatch(r"[A-Za-z0-9_-]+", run.name):
         raise ValueError("Run directory name contains unsupported characters")
-    for name in ["run.json", "task-snapshot.md", *FILES.values()]:
-        p = run / name
-        if p.is_symlink() or not p.is_file():
-            raise ValueError(f"Missing regular file: {name}")
+    regular_file(run, "run.json")
+    meta = read_json(run / "run.json")
+    for name in ["task-snapshot.md", *contract_files(meta).values()]:
+        regular_file(run, name)
     return run
 
 
@@ -124,13 +192,14 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
                 "transcript_before_review_sha256"}
     if required - meta.keys():
         raise ValueError(f"Missing fields: {sorted(required - meta.keys())}")
-    if meta["schema_version"] != 1 or meta["task_version"] != 1:
-        raise ValueError("Unsupported schema/task version")
+    files = contract_files(meta)
+    if meta["schema_version"] == 2 and "evidence_before_review_sha256" not in meta:
+        raise ValueError("Missing evidence_before_review_sha256")
     if meta["run_id"] != run.name or meta["task_id"] != "document-finalization-evaluation":
         raise ValueError("Run/task identity mismatch")
     if meta["status"] not in TERMINAL | {"prepared", "running"}:
         raise ValueError("Unknown run status")
-    if meta["execution_mode"] not in MODES or meta["files"] != FILES:
+    if meta["execution_mode"] not in MODES or meta["files"] != files:
         raise ValueError("Unsupported execution mode or file mapping")
     if meta["task_snapshot"] != "task-snapshot.md":
         raise ValueError("Unsupported task snapshot path")
@@ -148,12 +217,14 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
     if TASK.exists() and digest(TASK) != digest(run / "task-snapshot.md"):
         print("NOTE: current task differs; validating the captured task snapshot")
     final = require_outputs or meta["status"] in TERMINAL
-    for name in FILES.values():
+    evidence_names = evidence_files(run, meta)
+    artifact_names = set(files.values()) | set(evidence_names)
+    for name in LEGACY_FILES.values():
         text = (run / name).read_text(encoding="utf-8")
         if final and (not text.strip() or PENDING in text):
             raise ValueError(f"Output not filled: {name}")
     if verify_artifacts and meta["status"] in TERMINAL:
-        if set(meta["artifact_sha256"]) != set(FILES.values()):
+        if set(meta["artifact_sha256"]) != artifact_names:
             raise ValueError("Final run needs artifact hashes; use finalize")
         for name, expected in meta["artifact_sha256"].items():
             if expected == "unknown":
@@ -165,6 +236,20 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
         raise ValueError("Transcript changed after the pre-review checkpoint")
     if checkpoint == "unknown" and meta["status"] in TERMINAL:
         print("WARNING: no pre-review transcript hash was captured; grading separation is unverified")
+    if meta["schema_version"] == 2:
+        evidence_checkpoint = meta["evidence_before_review_sha256"]
+        if not isinstance(evidence_checkpoint, dict):
+            raise ValueError("evidence_before_review_sha256 must be a mapping")
+        if evidence_checkpoint:
+            if set(evidence_checkpoint) != set(evidence_names):
+                raise ValueError("Pre-review evidence file list does not match the declaration")
+            for name, expected in evidence_checkpoint.items():
+                if expected == "unknown":
+                    print(f"WARNING: no pre-review evidence hash was captured: {name}")
+                elif digest(run / name) != expected:
+                    raise ValueError(f"Evidence changed after the pre-review checkpoint: {name}")
+        elif meta["status"] in TERMINAL:
+            print("WARNING: no pre-review evidence hashes were captured; grading separation is unverified")
     return meta
 
 
@@ -176,9 +261,13 @@ def checkpoint_run(run):
     if not text.strip() or PENDING in text:
         raise ValueError("Fill the actual transcript before checkpointing")
     meta["transcript_before_review_sha256"] = digest(run / "transcript.md")
+    if meta["schema_version"] == 2:
+        meta["evidence_before_review_sha256"] = {
+            name: digest(run / name) for name in evidence_files(run, meta, warn=False)
+        }
     meta["transcript_checkpoint_at"] = datetime.now(timezone.utc).isoformat()
     write_json(run / "run.json", meta)
-    print("Transcript checkpoint recorded. Keep the raw transcript unchanged during review.")
+    print("Pre-review checkpoint recorded. Keep the transcript and declared evidence unchanged during review.")
 
 
 def finalize_run(run, status):
@@ -189,7 +278,11 @@ def finalize_run(run, status):
         raise ValueError("A completed run needs an explicit completed_scope")
     if meta["transcript_before_review_sha256"] == "unknown":
         raise ValueError("Record a transcript checkpoint before grading/finalizing")
-    meta["artifact_sha256"] = {name: digest(run / name) for name in FILES.values()}
+    if meta["schema_version"] == 2 and not meta["evidence_before_review_sha256"]:
+        raise ValueError("Record an evidence checkpoint before grading/finalizing")
+    names = [*contract_files(meta).values()]
+    names.extend(name for name in evidence_files(run, meta, warn=False) if name not in names)
+    meta["artifact_sha256"] = {name: digest(run / name) for name in names}
     meta["status"] = status
     meta["delivered_at"] = datetime.now(timezone.utc).isoformat()
     write_json(run / "run.json", meta)
@@ -201,7 +294,8 @@ def pack_run(run):
     if meta["status"] not in TERMINAL:
         raise ValueError("Finalize the run before packaging")
     output = run.with_suffix(".zip")
-    names = ["run.json", "task-snapshot.md", *FILES.values()]
+    names = ["run.json", "task-snapshot.md", *contract_files(meta).values()]
+    names.extend(name for name in evidence_files(run, meta, warn=False) if name not in names)
     if (run / "review.md").exists():
         if (run / "review.md").is_symlink() or not (run / "review.md").is_file():
             raise ValueError("review.md must be a regular file")

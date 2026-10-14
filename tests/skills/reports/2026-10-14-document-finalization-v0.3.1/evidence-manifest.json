@@ -1,0 +1,18 @@
+{
+  "kind": "targeted_forward_check_not_frozen_batch_run",
+  "skill_version": "0.3.1",
+  "capture_mode": "formatted_transcript",
+  "context_creation": "collaboration.spawn_agent fork_turns=none; subsequent rounds via followup_task",
+  "review_mode": "parent_review_of_visible_outputs",
+  "tool_access": "unrestricted; prompt limited to read Skill and reply",
+  "limitations": [
+    "No native event export or full tool trace.",
+    "Readable messages transcribed from tool-returned content; hashes do not prove original request bytes.",
+    "Single five-turn sample; no receiver B or full frozen batch execution."
+  ],
+  "files": {
+    "forward-check/handoff.md": "77823b9fd8f9d2052123dec92352970e863f3ed5b73beb86fac074ad2fe333f2",
+    "forward-check/skill.md": "e550b39e19ec829b9e3f29465bb2d11f6da4a65913105796654cf97b2b78f527",
+    "forward-check/transcript.md": "b32e077e02d1c73bd0f2f85b4ab0f61700215cb672c29ebd4e9f113031599728"
+  }
+}
