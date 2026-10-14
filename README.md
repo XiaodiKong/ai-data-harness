@@ -36,8 +36,8 @@ npm run preview
 
 ### 在其他 AI 中测试
 
-在另一个 AI 中新建聊天，发送下面这句话即可：
+统一入口是 [AI-START.md](AI-START.md)。让新 AI 读取并执行该文件即可，启动指令、测试步骤和回传要求均已写入项目，不必复制长提示词。
 
-> 请读取 https://github.com/XiaodiKong/ai-data-harness/blob/main/tests/skills/document-finalization-pilot/RUN-TESTS.md ，获取说明中列出的仓库文件，按步骤实际执行测试并提供完整报告与逐轮原始结果。能创建独立上下文时使用独立上下文；否则明确标为单上下文演练，不要把演练称为跨 AI 实测。
+AI 按 [任务单](ai-collaboration/tasks/document-finalization-evaluation/TASK.md) 执行，将结果写成 `ai-collaboration/runs/<run-id>/` 下的四个交接文件；下一位 AI 直接读取结果并另写复核意见。没有 GitHub 写权限时，返回 ZIP 或可下载文件，用户只需传递附件。
 
-测试入口选择当前固定批次（目前为 v0.3.0），旧批次保留供回测。运行结束后，将报告和原始结果带回本项目评审。不同 AI 各自运行同一批材料，可用于比较表现；真正的跨 AI 交接仍须实际传递交接包。若 AI 无法读取 GitHub，按其提示上传测试文件。
+[测试入口](tests/skills/document-finalization-pilot/RUN-TESTS.md) 仍保持有效，当前固定批次为 v0.3.0，旧批次保留回测。文件管理工具不执行模型测试；读取 GitHub 不代表能自动回写，具体能力与执行限制必须记录。完整流程见 [文件协作约定](ai-collaboration/README.md)。
