@@ -1,0 +1,4 @@
+interface:
+  display_name: "文档定稿与版本验收"
+  short_description: "多轮修改后整合完整正文，分离决策和变更记录，主动检查并发起版本验收"
+  default_prompt: "请使用 $document-finalization 整理并维护当前文档，将最终有效内容与决策记录分离，检查完整性，并在具备条件时主动提交版本验收。"
