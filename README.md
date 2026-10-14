@@ -40,4 +40,4 @@ npm run preview
 
 > 请读取 https://github.com/XiaodiKong/ai-data-harness/blob/main/tests/skills/document-finalization-pilot/RUN-TESTS.md ，获取说明中列出的仓库文件，按步骤实际执行测试并提供完整报告与逐轮原始结果。能创建独立上下文时使用独立上下文；否则明确标为单上下文演练，不要把演练称为跨 AI 实测。
 
-运行结束后，将报告和原始结果带回本项目评审。不同 AI 各自运行同一批材料，可用于比较表现；真正的跨 AI 交接仍须实际传递交接包。若 AI 无法读取 GitHub，按其提示上传测试文件。
+测试入口选择当前固定批次（目前为 v0.3.0），旧批次保留供回测。运行结束后，将报告和原始结果带回本项目评审。不同 AI 各自运行同一批材料，可用于比较表现；真正的跨 AI 交接仍须实际传递交接包。若 AI 无法读取 GitHub，按其提示上传测试文件。

@@ -17,4 +17,6 @@
 
 `document-finalization/SKILL.md` 的正文是通用工作规则，可提供给其他 AI；`agents/openai.yaml` 仅用于平台展示。详细示例与交接模板位于该 Skill 的 `references/` 中，附件不可用时仍可依照核心规则工作。
 
+当前版本为 v0.3.0；跨 AI 运行请从 [测试入口](../tests/skills/document-finalization-pilot/RUN-TESTS.md) 开始，入口会选择相应冻结批次。
+
 行为评估规范见 [文档定稿评估案例](../tests/skills/document-finalization-cases.md)。格式校验通过不代表跨 AI 行为已验证。

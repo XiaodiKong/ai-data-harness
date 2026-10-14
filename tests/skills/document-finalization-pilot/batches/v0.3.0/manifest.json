@@ -1,0 +1,18 @@
+{
+  "batch_id": "document-finalization-0.3.0-pilot-1",
+  "skill_version": "0.3.0",
+  "protocol_version": "2",
+  "source_base_commit": "725a02d",
+  "source_note": "Candidate working-tree snapshot. File hashes identify the actual content; the base commit does not contain these changes.",
+  "status": "frozen_inputs_not_a_test_result",
+  "mode": "text_only_core_skill",
+  "files": {
+    "RUN-TESTS.md": "db64df2f78e0a716ae0b932a2f0b587b6b87416e6083f2b8811c7af236c5a042",
+    "inputs/00-skill.md": "53e022d8b46ecd3e0e8dde89d73fbf74ca13dbd8582735d5b2b9d0a29fa15ef5",
+    "inputs/01-revision.md": "db42039f8f38ac184063a08f8070b6f69b57da4652d01ee5a30fd82946995156",
+    "inputs/02-evidence-acceptance.md": "b6b56af6f257ebae587642139c75edcf90c5a847438756445e495387bc5b3706",
+    "inputs/03-handoff.md": "1e7d5c3c7d5c60e7495a181fa7b340828c12dc2972228d8751def7bba9419619",
+    "inputs/04-boundaries.md": "24f429b0be953120a1adc0d933cb2b31fd9778dd99c67794584e67991e404aaf",
+    "reviewer/RUBRIC.md": "0f172752eb9e01eb7e6fafa703053c536c14694bb98e9a6c6ada20ce215c6dc8"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-14",
+  "context_mode": "fork_turns=none",
+  "reviewer": "primary author; not independent blind grading",
+  "run_status": "partial_usage_limit",
+  "files": {
+    "INPUTS.md": "993a128363c6eedaa701e0e0fecdc6db4715207557c5d13a463331a97172df3d",
+    "REPORT.md": "9111f0ec2ec7acdeca321c770ba05aec2bb4e8699b9083b36c0b63feb4163f7d",
+    "raw/baseline-1.md": "3082506de879d420798d1dc035b78fb3fd34cc60db9a15dcd066a877a2584aab",
+    "raw/baseline-2.md": "274d46c8b3e558eb8d5d704b07811eaf7a91b301d2cc87caf0cf0204bc978741",
+    "raw/baseline-skill.md": "287643eb0bf2a0ca464292d90d6505b3f254b2b08e3846f4675b398ff977582a",
+    "raw/candidate-evidence-1.md": "05bb0f05b5b2abbcc49555ae0395376c22664020b05b9d0b40b99667b22d7273",
+    "raw/candidate-evidence-2.md": "fbebbe4e6587b2ecdaaff9cdde0c151a1676d60acc91fd070e21487a266e1b25",
+    "raw/candidate-revision-1.md": "6d9326b7443b7501b545465ec7d756528bdb69eeb566651933fbcf04a83cf7c0",
+    "raw/candidate-revision-2.md": "b59f5a6bf83d814f7367c2c93d5c24aad21bdf79ad74a8fd241d8f8970f726d6",
+    "raw/candidate-skill.md": "b7c164e567f6ab084aaeb44b84b45ff78fc1f9db0737851d2924da651ac9ce10"
+  }
+}
