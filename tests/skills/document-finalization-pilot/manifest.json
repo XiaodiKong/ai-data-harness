@@ -1,0 +1,11 @@
+{
+  "skill_version": "0.2.0",
+  "status": "prepared_not_executed",
+  "mode": "text_only_core_skill",
+  "files": {
+    "inputs/00-skill.md": "287643eb0bf2a0ca464292d90d6505b3f254b2b08e3846f4675b398ff977582a",
+    "inputs/01-revision.md": "db42039f8f38ac184063a08f8070b6f69b57da4652d01ee5a30fd82946995156",
+    "inputs/02-evidence-acceptance.md": "b6b56af6f257ebae587642139c75edcf90c5a847438756445e495387bc5b3706",
+    "inputs/03-handoff.md": "1e7d5c3c7d5c60e7495a181fa7b340828c12dc2972228d8751def7bba9419619"
+  }
+}

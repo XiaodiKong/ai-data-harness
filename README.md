@@ -29,3 +29,15 @@ npm run preview
 ```
 
 预览地址为 `http://127.0.0.1:4173`。
+
+## 文档定稿与版本验收 Skill
+
+[Skill 源文件](skills/document-finalization/SKILL.md) 用于多轮文档整合、论据检查、决策记录分离和版本验收。
+
+### 在其他 AI 中测试
+
+在另一个 AI 中新建聊天，发送下面这句话即可：
+
+> 请读取 https://github.com/XiaodiKong/ai-data-harness/blob/main/tests/skills/document-finalization-pilot/RUN-TESTS.md ，获取说明中列出的仓库文件，按步骤实际执行测试并提供完整报告与逐轮原始结果。能创建独立上下文时使用独立上下文；否则明确标为单上下文演练，不要把演练称为跨 AI 实测。
+
+运行结束后，将报告和原始结果带回本项目评审。不同 AI 各自运行同一批材料，可用于比较表现；真正的跨 AI 交接仍须实际传递交接包。若 AI 无法读取 GitHub，按其提示上传测试文件。
