@@ -1,0 +1,41 @@
+{
+  "skill_version": "0.3.3",
+  "source_base_commit": "f3f2db9abee015e863610f890fced43271aebf06",
+  "test_mode": "same_model_two_turns_local_files_prompt_restricted_network",
+  "context": "fork_turns=none; same agent reused for round 2",
+  "agent_task": "/root/offline_forward_check",
+  "native_event_export": false,
+  "network_disabled_by_configuration": false,
+  "limitations": [
+    "Prompt-restricted local-file task, not an operating-system network isolation test.",
+    "No native request/tool event export; do not infer absence of network from output or self-report.",
+    "The optional references were available; loading of each reference was not independently verified.",
+    "After the behavior check, one SCQA example was revised to remove draft-history narration; tested snapshot retained separately. Final package was statically checked; no complete behavioral rerun.",
+    "This is not a complete 17-item batch, a cross-model test or a target-machine installation test."
+  ],
+  "tested_files": {
+    "forward-check/INPUTS.md": "f5b54c0b8ec377e1c6e4f3cf00c12c840f8067881a997ca6159de191082ca84b",
+    "forward-check/response-1.md": "7e02baa1f9308ad31fd77f56912480e83bcef6a9a9f29cc322d3d96876064484",
+    "forward-check/response-2.md": "09d55666d54bd9c75bf6ebd06a74be9c9557d0a283c0ba05110f4b4fdaddc950",
+    "forward-check/tested-skill/SKILL.md": "658f728218ca1b7a751d86b61d83c85848cb1c890e1d843adab72a921d966b70",
+    "forward-check/tested-skill/agents/openai.yaml": "e7f0af6cf280bfec09a5c8ad401bf4eae79e3608dcabb0a3f31a25e30d42db5c",
+    "forward-check/tested-skill/references/handoff-template.md": "230d02cc0f3ac561a9eca493760b9734dd331d54df37ecd02f6578e2b6e678a2",
+    "forward-check/tested-skill/references/methods-and-examples.md": "95bd24946b8ee55d3bff2d9ede69dd29944e9363d4d9350bfbc8a45b7e7c8d70"
+  },
+  "final_skill_files": {
+    "SKILL.md": "658f728218ca1b7a751d86b61d83c85848cb1c890e1d843adab72a921d966b70",
+    "agents/openai.yaml": "e7f0af6cf280bfec09a5c8ad401bf4eae79e3608dcabb0a3f31a25e30d42db5c",
+    "references/handoff-template.md": "230d02cc0f3ac561a9eca493760b9734dd331d54df37ecd02f6578e2b6e678a2",
+    "references/methods-and-examples.md": "27dfa379df838e40e29c69a1cd72810cf6b7e3b6d50f96079f6acc70c6cecd2f"
+  },
+  "archive": {
+    "path": "dist/skills/document-finalization-v0.3.3.zip",
+    "sha256": "0e72f351a3514ebce570ea3463e05eeca35a89205813feb0f00222d3134c5e89",
+    "file_count": 4,
+    "extracted_matches_source": true
+  },
+  "installed_copy": {
+    "path": "/Users/xiaodikong/.codex/skills/document-finalization",
+    "matches_final_source": true
+  }
+}
