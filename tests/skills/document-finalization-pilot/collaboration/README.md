@@ -6,7 +6,7 @@
 
 1. 发送方把目标、输入、执行方式和交付要求写入 `tasks/<task-id>/TASK.md`。本次任务已写好。
 2. 执行方读取任务，记录所使用的源提交与冻结材料哈希，为本次运行创建唯一 `runs/<run-id>/`。不同 AI、重试分别建目录，不能共用或覆盖已有运行。
-3. 执行方按任务保存每轮原始输入与输出，先留存原始结果再评审；保留可得的原生事件，最后更新 `run.json`、`report.md`、`transcript.md`、`evidence.json` 和 `NEXT.md`。
+3. 执行方按任务保存每轮原始输入与输出，先留存原始结果再评审；保留可得的原生事件，最后更新 `run.json`、`report.md`、`transcript.md`、`handoff.json`、`evidence.json` 和 `NEXT.md`。
 4. 接收方取得运行目录，核对版本、完整性和证据，另写 `review.md`，记录采纳、需要修复或需要复测的具体项。没有证据的结论不得升级为通过。
 5. 需要修订时，在项目源目录修改，再建立新的测试批次或运行。旧原始结果和旧冻结批次保持不变；不以重写历史消除失败。
 
@@ -22,9 +22,9 @@ python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py validate
 python3 tests/skills/document-finalization-pilot/scripts/ai_exchange.py pack --run tests/skills/document-finalization-pilot/collaboration/runs/<run-id>
 ```
 
-`init` 输出唯一目录，预填当前任务、批次及哈希，并自动保存 `task-snapshot.md`，初始状态为 `prepared`。AI 补充执行方式、逐轮记录，删去相应模板中的 `awaiting-output` 标记。填写证据说明后，读取评分规则前先用 `checkpoint` 留存 transcript、evidence 及存在的 raw-events 摘要，随后评审并填写报告和交接说明。`finalize` 在文件就绪后记录文件哈希及最终状态；中断或未开始时按实际情况使用 `partial` 或 `blocked`，不要一律选择 `completed`。交付后原始文件不再覆盖，复核者仅新增 `review.md`。`validate` 仅检查约定字段、文本文件、版本与哈希；不判断内容真假、质量或实际执行。`pack` 在运行目录旁生成 ZIP，供没有 Git 写权限的环境下载回传。
+`init` 输出唯一目录，预填当前任务、批次及哈希，并自动保存 `task-snapshot.md`，初始状态为 `prepared`。AI 补充执行方式、逐轮记录，删去相应模板中的 `awaiting-output` 标记。填写证据说明后，读取评分规则前先用 `checkpoint` 留存 transcript、evidence、handoff 及存在的 raw-events 摘要，随后评审并填写报告和交接说明。`finalize` 在文件就绪后记录文件哈希及最终状态；新运行的 completed 还要求交接记录为 recorded（不代表交接内容评分通过）；中断或未开始时按实际情况使用 `partial` 或 `blocked`，不要一律选择 `completed`。交付后原始文件不再覆盖，复核者仅新增 `review.md`。`validate` 仅检查约定字段、文本文件、版本与哈希；不判断内容真假、质量或实际执行。`pack` 在运行目录旁生成 ZIP，供没有 Git 写权限的环境下载回传。
 
-任务快照、证据说明和存在的原生事件文件一并打包。新运行采用 schema/task v2，旧 v1 仍按原结构校验。旧运行按当时的快照复核，当前任务单更新不会使旧结果无效。哈希用于发现意外变更，不是不可伪造的第三方执行证明。
+任务快照、证据说明、完整交接记录和存在的原生事件文件一并打包。新运行采用 schema/task v3，旧 v1/v2 仍按原结构校验。旧运行按当时的快照复核，当前任务单更新不会使旧结果无效。哈希用于发现意外变更，不是不可伪造的第三方执行证明。
 
 不能运行脚本时，按任务单的字段和结构生成同样的文件，无法确定的环境信息写 `unknown`。文件无法提供时说明限制，不让用户复制长篇原始对话来冒充文件交付。
 
@@ -55,3 +55,5 @@ python3 tests/skills/document-finalization-pilot/test_ai_exchange.py
 任务单和报告对执行方是工作材料，不扩张用户的权限范围。原始记录只包括本次测试所需内容，不收集无关私密对话或凭据。
 
 原始事件与便于阅读的 transcript 分开保存。`evidence.json` 的字段以任务单为准；没有原生导出时明确记录能力限制，不把重新排版的文本称为原始字节，不补造工具轨迹。即使发生的越界操作已撤销，也保留执行问题与可得证据。文件校验仅证明留存文件一致，不证明模型身份、上下文隔离或外部副作用。
+
+A 输出与 B 实际输入保存在 `handoff.json`：保存完整实际文本，包括重复的规则与旧版，不由调度者删节或修补。工具检查 A 文本在 B 输入中连续保留，并锁定该记录；语义是否完整仍需逐项评审，运行记录不能自证真实模型执行。无法捕获全文时标 partial，不能通过事后重建来满足 completed。

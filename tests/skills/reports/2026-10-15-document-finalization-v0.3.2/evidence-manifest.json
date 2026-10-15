@@ -1,0 +1,19 @@
+{
+  "kind": "targeted_file_artifact_check_not_full_batch",
+  "status": "partial",
+  "skill_version": "0.3.2",
+  "context_creation": "collaboration.spawn_agent fork_turns=none; followup_task for turn 2",
+  "review_mode": "parent_review_of_saved_outputs",
+  "limitations": [
+    "Turn 2 ended with usage limit; response-2.md exists but the turn did not finish normally.",
+    "No native message or complete tool-event export.",
+    "File-enabled isolated output directory; differs from the text-only frozen batch.",
+    "No acceptance revision or receiver handoff executed."
+  ],
+  "files": {
+    "forward-check/INPUTS.md": "9fd9fb805ab028b2ed0eb01f4553cd8778e9d217ec7118d247f090db3d0571fa",
+    "forward-check/response-1.md": "0ecbd96dbe3d742c9c8b1085d514c9ac4a85b4b583649e2e4d8097c4f8eb0b66",
+    "forward-check/response-2.md": "9bed319e774d401a50ea9ca0119ed0f6f3c4caee451e6cda9111027e5bd47cbb",
+    "forward-check/skill.md": "e059b7a0d07e9d8f3e7d67b9550eccf7fff6561ff26d720db5a29340d05bfd48"
+  }
+}

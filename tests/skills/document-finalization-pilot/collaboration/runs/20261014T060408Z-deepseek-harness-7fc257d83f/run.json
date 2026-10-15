@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "run_id": "20261014T060408Z-deepseek-harness-7fc257d83f",
+  "task_id": "document-finalization-evaluation",
+  "task_version": 2,
+  "created_at": "2026-10-14T06:04:08.193212+00:00",
+  "ai_product": "deepseek-harness",
+  "model": "deepseek-v4-pro",
+  "source_commit": "74fe4f028a470b06cf1202ebfbda8218ca387758",
+  "source_tracked_changes": false,
+  "batch_id": "document-finalization-0.3.1-pilot-1",
+  "batch_path": "tests/skills/document-finalization-pilot/batches/v0.3.1",
+  "batch_manifest_sha256": "8f863765559d91a322c92d36f4e7064bc057e32b3693de8485c522e9ccb5e2c0",
+  "task_sha256": "9785f98cf135becd733cc37780a8c746392bb4221a37a61070ee0cd5a352fc6f",
+  "task_snapshot": "task-snapshot.md",
+  "transcript_before_review_sha256": "aa839fd2d0c338cae3131202d77e01a2c13f45b7bf11507400bc3f1864f421ab",
+  "evidence_before_review_sha256": {
+    "evidence.json": "6a344c916a106e25f825bd69ed328093f5ce90441c49487fef8b4fe2f27f31e5"
+  },
+  "execution_mode": "isolated_contexts",
+  "context_isolation": "fresh no-history subagent per scenario/boundary; prompt-only tool constraint (tools not disableable at config level); all contexts same model deepseek-v4-pro",
+  "review_mode": "same_ai_self_review",
+  "status": "completed",
+  "completed_scope": [
+    "scenario_1_revision_rounds_1_to_4",
+    "scenario_2_evidence_acceptance_rounds_1_to_5",
+    "scenario_3_handoff_A_to_B_and_missing_material",
+    "boundary_B1_B2_B3",
+    "rubric_review_report_next"
+  ],
+  "limitations": [
+    "single model (deepseek-v4-pro) across contexts; not cross-model/cross-AI",
+    "tool constraint is prompt-only; subagent tools not disabled at config level; tool-call history not captured",
+    "no native event export; formatted transcript only; original message bytes unverified",
+    "context isolation verifiable only at no-parent-history-injection level",
+    "same-AI self review"
+  ],
+  "files": {
+    "report": "report.md",
+    "transcript": "transcript.md",
+    "next": "NEXT.md",
+    "evidence": "evidence.json"
+  },
+  "artifact_sha256": {
+    "report.md": "8cac4d83ab385f3cfd37db3f3f66d7672c52ee5d1d8c6242768a218babb8488f",
+    "transcript.md": "aa839fd2d0c338cae3131202d77e01a2c13f45b7bf11507400bc3f1864f421ab",
+    "NEXT.md": "451229458db93dafb246d72eabf6a4c5e42d3d61df0d874627f50f4656ab2fae",
+    "evidence.json": "6a344c916a106e25f825bd69ed328093f5ce90441c49487fef8b4fe2f27f31e5"
+  },
+  "transcript_checkpoint_at": "2026-10-14T06:20:36.971529+00:00",
+  "delivered_at": "2026-10-14T06:23:46.742776+00:00"
+}

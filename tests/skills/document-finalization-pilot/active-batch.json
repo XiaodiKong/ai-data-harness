@@ -1,5 +1,5 @@
 {
-  "batch_id": "document-finalization-0.3.1-pilot-1",
-  "path": "batches/v0.3.1",
+  "batch_id": "document-finalization-0.3.2-pilot-1",
+  "path": "batches/v0.3.2",
   "entry": "RUN-TESTS.md"
 }

@@ -16,7 +16,8 @@ ROOT = PILOT.parents[2]
 RUNS = PILOT / "collaboration/runs"
 TASK = PILOT / "collaboration/tasks/evaluation/TASK.md"
 LEGACY_FILES = {"report": "report.md", "transcript": "transcript.md", "next": "NEXT.md"}
-FILES = {**LEGACY_FILES, "evidence": "evidence.json"}
+V2_FILES = {**LEGACY_FILES, "evidence": "evidence.json"}
+FILES = {**V2_FILES, "handoff": "handoff.json"}
 CAPTURE_MODES = {"native_events", "formatted_transcript", "unknown"}
 TOOL_ACCESS = {"disabled", "restricted", "unrestricted", "unknown"}
 TERMINAL = {"completed", "partial", "blocked"}
@@ -41,6 +42,8 @@ def contract_files(meta):
     if versions == (1, 1):
         return LEGACY_FILES
     if versions == (2, 2):
+        return V2_FILES
+    if versions == (3, 3):
         return FILES
     raise ValueError("Unsupported schema/task version")
 
@@ -54,6 +57,35 @@ def regular_file(run, name):
 
 def reject_non_json_number(value):
     raise ValueError(f"Non-JSON number: {value}")
+
+
+def handoff_record(run, meta):
+    """Check captured text transfer only, not package quality or model execution."""
+    if meta["schema_version"] < 3:
+        return None
+    record = read_json(regular_file(run, "handoff.json"))
+    required = {"schema_version", "status", "a_output", "b_input", "limitations"}
+    if not isinstance(record, dict) or required - record.keys():
+        raise ValueError("Incomplete handoff record")
+    if record["schema_version"] != 1 or record["status"] not in {"not_run", "partial", "recorded"}:
+        raise ValueError("Unsupported handoff schema or status")
+    if not all(isinstance(record[name], str) for name in ("a_output", "b_input")):
+        raise ValueError("Handoff a_output and b_input must be strings")
+    if not isinstance(record["limitations"], list) or not all(
+        isinstance(item, str) for item in record["limitations"]
+    ):
+        raise ValueError("Handoff limitations must be a list of strings")
+    a_output, b_input = record["a_output"], record["b_input"]
+    if record["status"] == "not_run" and (a_output or b_input):
+        raise ValueError("not_run handoff must have empty a_output and b_input")
+    if record["status"] == "partial" and not (a_output.strip() or b_input.strip()):
+        raise ValueError("partial handoff needs captured text; use not_run if no text was captured")
+    if record["status"] == "recorded":
+        if not a_output.strip() or not b_input.strip():
+            raise ValueError("recorded handoff requires nonempty a_output and b_input")
+        if a_output not in b_input:
+            raise ValueError("recorded handoff requires the unchanged a_output as one continuous block in b_input")
+    return record
 
 
 def evidence_files(run, meta, warn=True):
@@ -93,6 +125,13 @@ def evidence_files(run, meta, warn=True):
         print("WARNING: no native event export; original message bytes and tool events are unverified")
     if warn and evidence["tool_access"] == "unknown":
         print("WARNING: executor tool access was not captured")
+    return names
+
+
+def pre_review_files(run, meta, warn=True):
+    names = evidence_files(run, meta, warn=warn)
+    if handoff_record(run, meta) is not None:
+        names.append("handoff.json")
     return names
 
 
@@ -138,8 +177,8 @@ def init_run(args):
     except (subprocess.CalledProcessError, FileNotFoundError):
         commit, dirty = "unknown", "unknown"
     metadata = {
-        "schema_version": 2, "run_id": run_id,
-        "task_id": "document-finalization-evaluation", "task_version": 2,
+        "schema_version": 3, "run_id": run_id,
+        "task_id": "document-finalization-evaluation", "task_version": 3,
         "created_at": now.isoformat(), "ai_product": args.ai, "model": args.model,
         "source_commit": commit, "source_tracked_changes": dirty,
         "batch_id": active["batch_id"], "batch_path": str(batch.relative_to(ROOT)),
@@ -155,6 +194,10 @@ def init_run(args):
     write_json(run / "evidence.json", {
         "schema_version": 1, "capture_mode": "unknown", "raw_events_file": None,
         "tool_access": "unknown", "limitations": [],
+    })
+    write_json(run / "handoff.json", {
+        "schema_version": 1, "status": "not_run", "a_output": "", "b_input": "",
+        "limitations": [],
     })
     (run / "task-snapshot.md").write_bytes(task_bytes)
     templates = {
@@ -193,7 +236,7 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
     if required - meta.keys():
         raise ValueError(f"Missing fields: {sorted(required - meta.keys())}")
     files = contract_files(meta)
-    if meta["schema_version"] == 2 and "evidence_before_review_sha256" not in meta:
+    if meta["schema_version"] >= 2 and "evidence_before_review_sha256" not in meta:
         raise ValueError("Missing evidence_before_review_sha256")
     if meta["run_id"] != run.name or meta["task_id"] != "document-finalization-evaluation":
         raise ValueError("Run/task identity mismatch")
@@ -217,7 +260,10 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
     if TASK.exists() and digest(TASK) != digest(run / "task-snapshot.md"):
         print("NOTE: current task differs; validating the captured task snapshot")
     final = require_outputs or meta["status"] in TERMINAL
-    evidence_names = evidence_files(run, meta)
+    evidence_names = pre_review_files(run, meta)
+    if meta["schema_version"] >= 3 and meta["status"] == "completed":
+        if handoff_record(run, meta)["status"] != "recorded":
+            raise ValueError("A completed run requires a recorded handoff")
     artifact_names = set(files.values()) | set(evidence_names)
     for name in LEGACY_FILES.values():
         text = (run / name).read_text(encoding="utf-8")
@@ -236,7 +282,7 @@ def validate_run(run, require_outputs=False, verify_artifacts=True):
         raise ValueError("Transcript changed after the pre-review checkpoint")
     if checkpoint == "unknown" and meta["status"] in TERMINAL:
         print("WARNING: no pre-review transcript hash was captured; grading separation is unverified")
-    if meta["schema_version"] == 2:
+    if meta["schema_version"] >= 2:
         evidence_checkpoint = meta["evidence_before_review_sha256"]
         if not isinstance(evidence_checkpoint, dict):
             raise ValueError("evidence_before_review_sha256 must be a mapping")
@@ -261,9 +307,9 @@ def checkpoint_run(run):
     if not text.strip() or PENDING in text:
         raise ValueError("Fill the actual transcript before checkpointing")
     meta["transcript_before_review_sha256"] = digest(run / "transcript.md")
-    if meta["schema_version"] == 2:
+    if meta["schema_version"] >= 2:
         meta["evidence_before_review_sha256"] = {
-            name: digest(run / name) for name in evidence_files(run, meta, warn=False)
+            name: digest(run / name) for name in pre_review_files(run, meta, warn=False)
         }
     meta["transcript_checkpoint_at"] = datetime.now(timezone.utc).isoformat()
     write_json(run / "run.json", meta)
@@ -278,8 +324,11 @@ def finalize_run(run, status):
         raise ValueError("A completed run needs an explicit completed_scope")
     if meta["transcript_before_review_sha256"] == "unknown":
         raise ValueError("Record a transcript checkpoint before grading/finalizing")
-    if meta["schema_version"] == 2 and not meta["evidence_before_review_sha256"]:
+    if meta["schema_version"] >= 2 and not meta["evidence_before_review_sha256"]:
         raise ValueError("Record an evidence checkpoint before grading/finalizing")
+    if meta["schema_version"] >= 3 and status == "completed":
+        if handoff_record(run, meta)["status"] != "recorded":
+            raise ValueError("A completed run requires a recorded handoff")
     names = [*contract_files(meta).values()]
     names.extend(name for name in evidence_files(run, meta, warn=False) if name not in names)
     meta["artifact_sha256"] = {name: digest(run / name) for name in names}

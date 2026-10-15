@@ -1,0 +1,18 @@
+{
+  "batch_id": "document-finalization-0.3.2-pilot-1",
+  "skill_version": "0.3.2",
+  "protocol_version": "4",
+  "source_base_commit": "74fe4f028a470b06cf1202ebfbda8218ca387758",
+  "source_note": "Candidate working-tree snapshot; file hashes identify exact inputs. The base commit predates v0.3.2. Record the actual checked-out commit for each run.",
+  "status": "frozen_inputs_not_a_test_result",
+  "mode": "text_only_core_skill",
+  "files": {
+    "RUN-TESTS.md": "0c84ee91d0b130f0a8295e15b8ff3124ac2a6e6ded03fac34aacf6f1c1721e8c",
+    "inputs/00-skill.md": "e059b7a0d07e9d8f3e7d67b9550eccf7fff6561ff26d720db5a29340d05bfd48",
+    "inputs/01-revision.md": "db42039f8f38ac184063a08f8070b6f69b57da4652d01ee5a30fd82946995156",
+    "inputs/02-evidence-acceptance.md": "b6b56af6f257ebae587642139c75edcf90c5a847438756445e495387bc5b3706",
+    "inputs/03-handoff.md": "2cf2473964f7284f498f2a491af0fe1c8249bc8a53eafc965b80382f029b944c",
+    "inputs/04-boundaries.md": "24f429b0be953120a1adc0d933cb2b31fd9778dd99c67794584e67991e404aaf",
+    "reviewer/RUBRIC.md": "62b5b4f9987bd662d69dfeab6a73176c54b98e23370482dc3f2e51110564142f"
+  }
+}

@@ -72,8 +72,21 @@ class ExchangeTests(unittest.TestCase):
             '{"fixture": "synthetic", "type": "output", "text": "world"}\n'
         )
 
+    def handoff(self, run, status="recorded", a_output=None, b_input=None):
+        if a_output is None:
+            a_output = "Synthetic A output. No model execution.\n完整消息正文。\n" if status != "not_run" else ""
+        if b_input is None:
+            b_input = "--- message 1 ---\n" + a_output + "--- message 2 ---\nSynthetic follow-up.\n" if status == "recorded" else ""
+        value = {
+            "schema_version": 1, "status": status, "a_output": a_output, "b_input": b_input,
+            "limitations": ["Synthetic contract fixture; no model execution occurred."],
+        }
+        (run / "handoff.json").write_text(json.dumps(value, ensure_ascii=False) + "\n")
+
     def complete(self, run):
         self.fill(run)
+        if json.loads((run / "run.json").read_text())["schema_version"] >= 3:
+            self.handoff(run)
         self.cli("checkpoint", "--run", str(run))
         self.cli("finalize", "--run", str(run), "--status", "completed")
 
@@ -82,13 +95,17 @@ class ExchangeTests(unittest.TestCase):
         self.assertNotEqual(first, second)
         meta = json.loads((first / "run.json").read_text())
         self.assertEqual(meta["status"], "prepared")
-        self.assertEqual((meta["schema_version"], meta["task_version"]), (2, 2))
+        self.assertEqual((meta["schema_version"], meta["task_version"]), (3, 3))
         self.assertEqual(meta["files"]["evidence"], "evidence.json")
+        self.assertEqual(meta["files"]["handoff"], "handoff.json")
         self.assertEqual(meta["evidence_before_review_sha256"], {})
         evidence = json.loads((first / "evidence.json").read_text())
         self.assertEqual(evidence["capture_mode"], "unknown")
         self.assertEqual(evidence["tool_access"], "unknown")
         self.assertIsNone(evidence["raw_events_file"])
+        self.assertEqual(json.loads((first / "handoff.json").read_text()), {
+            "schema_version": 1, "status": "not_run", "a_output": "", "b_input": "", "limitations": [],
+        })
         self.assertEqual(
             (first / "task-snapshot.md").read_bytes(),
             (self.root / "tests/skills/document-finalization-pilot/collaboration/tasks/evaluation/TASK.md").read_bytes(),
@@ -133,7 +150,7 @@ class ExchangeTests(unittest.TestCase):
         with zipfile.ZipFile(archive) as z:
             prefix = str(run.relative_to(self.root)) + "/"
             self.assertEqual(set(z.namelist()), {
-                prefix + name for name in ["run.json", "task-snapshot.md", "report.md", "transcript.md", "NEXT.md", "evidence.json"]
+                prefix + name for name in ["run.json", "task-snapshot.md", "report.md", "transcript.md", "NEXT.md", "evidence.json", "handoff.json"]
             })
         self.cli("pack", "--run", str(run), ok=False)
         self.assertEqual(archive.read_bytes(), original)
@@ -169,8 +186,10 @@ class ExchangeTests(unittest.TestCase):
         meta = json.loads(path.read_text())
         meta["schema_version"] = meta["task_version"] = 1
         del meta["files"]["evidence"]
+        del meta["files"]["handoff"]
         del meta["evidence_before_review_sha256"]
         (run / "evidence.json").unlink()
+        (run / "handoff.json").unlink()
         (run / "task-snapshot.md").write_text("Historical task version 1 fixture.\n")
         meta["task_sha256"] = hashlib.sha256((run / "task-snapshot.md").read_bytes()).hexdigest()
         path.write_text(json.dumps(meta))
@@ -184,20 +203,40 @@ class ExchangeTests(unittest.TestCase):
                 "run.json", "task-snapshot.md", "report.md", "transcript.md", "NEXT.md",
             })
 
+    def test_legacy_schema_two_remains_valid_and_packable(self):
+        run = self.init()
+        path = run / "run.json"
+        meta = json.loads(path.read_text())
+        meta["schema_version"] = meta["task_version"] = 2
+        del meta["files"]["handoff"]
+        (run / "handoff.json").unlink()
+        (run / "task-snapshot.md").write_text("Historical task version 2 fixture.\n")
+        meta["task_sha256"] = hashlib.sha256((run / "task-snapshot.md").read_bytes()).hexdigest()
+        path.write_text(json.dumps(meta))
+        self.complete(run)
+        before = {file.name: file.read_bytes() for file in run.iterdir()}
+        self.cli("validate", "--run", str(run))
+        self.cli("pack", "--run", str(run))
+        self.assertEqual(before, {file.name: file.read_bytes() for file in run.iterdir()})
+        with zipfile.ZipFile(run.with_suffix(".zip")) as archive:
+            self.assertEqual({Path(name).name for name in archive.namelist()}, {
+                "run.json", "task-snapshot.md", "report.md", "transcript.md", "NEXT.md", "evidence.json",
+            })
+
     def test_native_raw_events_checkpoint_and_archive(self):
         run = self.init()
         self.native_fixture(run)
         raw_bytes = (run / "raw-events.jsonl").read_bytes()
         self.complete(run)
         meta = json.loads((run / "run.json").read_text())
-        self.assertEqual(set(meta["evidence_before_review_sha256"]), {"evidence.json", "raw-events.jsonl"})
+        self.assertEqual(set(meta["evidence_before_review_sha256"]), {"evidence.json", "raw-events.jsonl", "handoff.json"})
         self.assertEqual(meta["artifact_sha256"]["raw-events.jsonl"], hashlib.sha256(raw_bytes).hexdigest())
         (run / "unrelated-secret.txt").write_text("excluded fixture")
         self.cli("pack", "--run", str(run))
         with zipfile.ZipFile(run.with_suffix(".zip")) as archive:
             self.assertEqual({Path(name).name for name in archive.namelist()}, {
                 "run.json", "task-snapshot.md", "report.md", "transcript.md", "NEXT.md",
-                "evidence.json", "raw-events.jsonl",
+                "evidence.json", "raw-events.jsonl", "handoff.json",
             })
             self.assertEqual(archive.read(str(run.relative_to(self.root) / "raw-events.jsonl")), raw_bytes)
 
@@ -275,7 +314,107 @@ class ExchangeTests(unittest.TestCase):
         self.assertIn("original message bytes and tool events are unverified", result.stdout)
         self.assertNotIn("tool access was not captured", result.stdout)
         meta = json.loads((run / "run.json").read_text())
-        self.assertEqual(set(meta["evidence_before_review_sha256"]), {"evidence.json"})
+        self.assertEqual(set(meta["evidence_before_review_sha256"]), {"evidence.json", "handoff.json"})
+
+    def test_handoff_missing_or_symlink_rejected(self):
+        for symlink in (False, True):
+            with self.subTest(symlink=symlink):
+                run = self.init()
+                path = run / "handoff.json"
+                path.unlink()
+                if symlink:
+                    path.symlink_to(run / "evidence.json")
+                self.cli("validate", "--run", str(run), ok=False)
+                self.cli("checkpoint", "--run", str(run), ok=False)
+
+    def test_handoff_unrecorded_cannot_complete(self):
+        for status in ("not_run", "partial"):
+            with self.subTest(status=status):
+                run = self.init()
+                self.fill(run)
+                self.handoff(run, status)
+                self.cli("checkpoint", "--run", str(run))
+                result = self.cli("finalize", "--run", str(run), "--status", "completed", ok=False)
+                self.assertIn("requires a recorded handoff", result.stderr)
+
+    def test_handoff_unrecorded_allows_partial_or_blocked_delivery(self):
+        for handoff_status in ("not_run", "partial"):
+            for run_status in ("partial", "blocked"):
+                with self.subTest(handoff_status=handoff_status, run_status=run_status):
+                    run = self.init()
+                    self.fill(run)
+                    self.handoff(run, handoff_status)
+                    self.cli("checkpoint", "--run", str(run))
+                    self.cli("finalize", "--run", str(run), "--status", run_status)
+                    self.cli("validate", "--run", str(run))
+                    self.cli("pack", "--run", str(run))
+
+    def test_handoff_recorded_needs_unmodified_continuous_a_output(self):
+        for a_output, b_input in [
+            ("", "actual B input"), ("actual A output", ""), (" \n", " \n"),
+            ("first\nsecond", "first\nadded\nsecond"),
+            ("actual A output", "actual a output"),
+        ]:
+            with self.subTest(a_output=a_output, b_input=b_input):
+                run = self.init()
+                self.handoff(run, a_output=a_output, b_input=b_input)
+                self.cli("validate", "--run", str(run), ok=False)
+
+    def test_handoff_schema_and_status_reject_inconsistent_records(self):
+        for updates in [
+            {"schema_version": 2}, {"status": "unknown"}, {"a_output": None},
+            {"b_input": []}, {"limitations": "missing"}, {"limitations": [1]},
+            {"status": "not_run"}, {"status": "partial", "a_output": "", "b_input": ""},
+        ]:
+            with self.subTest(updates=updates):
+                run = self.init()
+                self.handoff(run)
+                path = run / "handoff.json"
+                record = json.loads(path.read_text())
+                record.update(updates)
+                path.write_text(json.dumps(record))
+                self.cli("validate", "--run", str(run), ok=False)
+
+    def test_handoff_changed_after_checkpoint_rejected(self):
+        run = self.init()
+        self.fill(run)
+        self.handoff(run)
+        self.cli("checkpoint", "--run", str(run))
+        self.handoff(run, a_output="Changed A output; also included in B input.")
+        result = self.cli("finalize", "--run", str(run), "--status", "completed", ok=False)
+        self.assertIn("Evidence changed", result.stderr)
+
+    def test_handoff_changed_after_delivery_rejected(self):
+        run = self.init()
+        self.complete(run)
+        self.handoff(run, a_output="Changed delivered A output; also included in B input.")
+        self.cli("validate", "--run", str(run), ok=False)
+        self.cli("pack", "--run", str(run), ok=False)
+
+    def test_handoff_hashes_and_archive_preserve_exact_bytes(self):
+        run = self.init()
+        self.complete(run)
+        handoff_bytes = (run / "handoff.json").read_bytes()
+        meta = json.loads((run / "run.json").read_text())
+        expected = hashlib.sha256(handoff_bytes).hexdigest()
+        self.assertEqual(meta["evidence_before_review_sha256"]["handoff.json"], expected)
+        self.assertEqual(meta["artifact_sha256"]["handoff.json"], expected)
+        self.cli("pack", "--run", str(run))
+        with zipfile.ZipFile(run.with_suffix(".zip")) as archive:
+            self.assertEqual(archive.read(str(run.relative_to(self.root) / "handoff.json")), handoff_bytes)
+
+    def test_manually_marked_completed_run_still_requires_recorded_handoff(self):
+        run = self.init()
+        self.fill(run)
+        self.handoff(run, "partial")
+        self.cli("checkpoint", "--run", str(run))
+        self.cli("finalize", "--run", str(run), "--status", "partial")
+        path = run / "run.json"
+        meta = json.loads(path.read_text())
+        meta["status"] = "completed"
+        path.write_text(json.dumps(meta))
+        self.cli("validate", "--run", str(run), ok=False)
+        self.cli("pack", "--run", str(run), ok=False)
 
 
 if __name__ == "__main__":
